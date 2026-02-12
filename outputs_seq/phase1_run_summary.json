@@ -1,0 +1,57 @@
+{
+  "modeling_mode": "sequential_single_order",
+  "data_csv": "whl_2025 - whl_2025(1).csv",
+  "rows": 25827,
+  "games": 1312,
+  "teams": 32,
+  "random_seed": 42,
+  "hybrid_elo_params": {
+    "k": 8,
+    "hfa": 40,
+    "xg_scale": 0.4,
+    "w_result": 0.6,
+    "mov_mult": true,
+    "scale": 400.0
+  },
+  "order_robust_settings": {
+    "enabled": false,
+    "n_shuffles": null,
+    "tune_shuffles": null
+  },
+  "cv_metrics": {
+    "logloss": 0.6776565160106939,
+    "brier": 0.24236887975903557,
+    "auc": 0.5752323626443344
+  },
+  "full_metrics": {
+    "logloss": 0.6780982009114653,
+    "brier": 0.24256843409069626,
+    "auc": 0.5710002835002834
+  },
+  "baseline_cv_metrics": {
+    "logloss": 0.6856215261779229,
+    "brier": 0.2462466215688419,
+    "auc": 0.5
+  },
+  "baseline_full_metrics": {
+    "logloss": 0.6849263834857996,
+    "brier": 0.2459008774538965,
+    "auc": 0.5
+  },
+  "improvement_vs_baseline": {
+    "cv_logloss_delta": 0.007965010167229059,
+    "cv_brier_delta": 0.003877741809806323,
+    "full_logloss_delta": 0.006828182574334263,
+    "full_brier_delta": 0.003332443363200238
+  },
+  "outputs": {
+    "phase1a_power_rankings": "outputs_seq/phase1a_power_rankings.csv",
+    "phase1a_sequential_game_predictions": "outputs_seq/phase1a_sequential_game_predictions.csv",
+    "phase1a_rating_samples_by_shuffle": null,
+    "phase1a_order_sensitivity_summary": null,
+    "phase1b_all_disparity": "outputs_seq/phase1b_line_disparity_all_teams.csv",
+    "phase1b_top10_disparity": "outputs_seq/phase1b_top10_line_disparity.csv",
+    "phase1c_png": "outputs_seq/phase1c_disparity_vs_team_strength.png",
+    "phase1a_round1_probabilities": "outputs_seq/phase1a_round1_matchup_probabilities.csv"
+  }
+}

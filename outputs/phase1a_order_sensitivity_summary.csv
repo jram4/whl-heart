@@ -1,0 +1,7 @@
+metric,value
+n_shuffles,400.0
+mean_game_prob_std,0.03498434456243718
+median_game_prob_std,0.03128596500697815
+max_game_prob_std,0.08858591050017948
+mean_team_rating_std,6.900262386229144
+max_team_rating_std,8.050807841626806
