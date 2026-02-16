@@ -32,3 +32,10 @@ python src/phase1_pipeline.py \
 - `outputs/phase1b_top10_line_disparity.csv`
 - `outputs/phase1c_disparity_vs_team_strength.png`
 - `outputs/phase1_run_summary.json`
+
+## Status (Feb 16, 2026)
+
+- **Phase 1a (Power Rankings & Matchups):** Complete. See `outputs/phase1a_power_rankings.csv` and `outputs/phase1a_round1_matchup_probabilities.csv`.
+- **Phase 1b (Line Disparity):** Complete. See `outputs/phase1b_top10_line_disparity.csv`.
+- **Phase 1c (Visualization):** Complete. See `outputs/phase1c_disparity_vs_team_strength.png`.
+- **Phase 1d (Methodology):** Drafted in Google Doc `1bKkRkyShOjG9xckniKxLibwe8ZG0lQzdw6EPY51dnxI`.
