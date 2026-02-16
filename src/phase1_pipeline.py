@@ -21,6 +21,8 @@ class HybridEloParams:
     xg_scale: float
     w_result: float
     mov_mult: bool
+    mov_scale: float = 2.2  # 538 style constant
+    k_decay: bool = False   # Enable early season K-boost
     scale: float = 400.0
 
 
@@ -171,6 +173,7 @@ def build_team_summary(games: pd.DataFrame) -> pd.DataFrame:
 def run_hybrid_elo(games: pd.DataFrame, params: HybridEloParams) -> tuple[pd.DataFrame, dict[str, float]]:
     teams = sorted(set(games["home_team"]).union(set(games["away_team"])))
     ratings = {t: 1500.0 for t in teams}
+    games_played = {t: 0 for t in teams}
 
     recs = []
     for row in games.itertuples(index=False):
@@ -182,11 +185,39 @@ def run_hybrid_elo(games: pd.DataFrame, params: HybridEloParams) -> tuple[pd.Dat
         p_home = 1.0 / (1.0 + 10 ** (-((rh + params.hfa) - ra) / params.scale))
         soft_result = 1.0 / (1.0 + np.exp(-(row.xg_margin) / params.xg_scale))
         target = params.w_result * row.home_win + (1.0 - params.w_result) * soft_result
-        mov = np.log1p(abs(row.goal_margin)) if params.mov_mult else 1.0
 
-        delta = params.k * mov * (target - p_home)
+        mov = 1.0
+        if params.mov_mult:
+            diff = abs(row.goal_margin)
+            # Autocorrelation damping: bigger upset -> bigger update, but blowout by favorite -> smaller boost
+            # 538-style multiplier: log(diff+1) * (2.2 / ((elo_diff)*0.001 + 2.2))
+            # elo_diff is simply the rating difference from the perspective of the winner
+            if row.home_win:
+                elo_diff = (rh + params.hfa) - ra
+            else:
+                elo_diff = ra - (rh + params.hfa)
+
+            # Safety clip to avoid division by zero or negative denominator if huge upset
+            denom = (elo_diff * 0.001) + params.mov_scale
+            if denom < 0.1:
+                denom = 0.1
+            mov = np.log(diff + 1) * (params.mov_scale / denom)
+
+        # Dynamic K-factor (early season boost)
+        k_mult = 1.0
+        if params.k_decay:
+            # Boost K for first 10 games per team
+            k_mult_home = 2.0 if games_played[home] < 10 else 1.0
+            k_mult_away = 2.0 if games_played[away] < 10 else 1.0
+            # Use average boost for this matchup
+            k_mult = (k_mult_home + k_mult_away) / 2.0
+
+        delta = params.k * k_mult * mov * (target - p_home)
         ratings[home] = rh + delta
         ratings[away] = ra - delta
+
+        games_played[home] += 1
+        games_played[away] += 1
 
         recs.append(
             {
@@ -225,11 +256,13 @@ def tune_hybrid_elo(games: pd.DataFrame) -> HybridEloParams:
     mask = rolling_eval_mask(len(games))
     y = games["home_win"].to_numpy()
 
-    grid_k = [4, 6, 8, 10, 12, 15]
-    grid_hfa = [30, 40, 50, 60]
-    grid_xg_scale = [0.4, 0.5, 0.7, 1.0]
-    grid_w_result = [0.5, 0.6, 0.7]
-    grid_mov = [True, False]
+    # Refined grid search based on previous findings (K=8, HFA=40, xg=0.5)
+    grid_k = [6, 8, 10]
+    grid_hfa = [35, 40, 45]
+    grid_xg_scale = [0.4, 0.5, 0.6]
+    grid_w_result = [0.55, 0.6, 0.65]
+    grid_mov = [True]  # Always use MoV now
+    grid_k_decay = [True, False]  # Test dynamic K
 
     best: tuple[float, HybridEloParams] | None = None
     for k in grid_k:
@@ -237,18 +270,20 @@ def tune_hybrid_elo(games: pd.DataFrame) -> HybridEloParams:
             for xg_scale in grid_xg_scale:
                 for w_result in grid_w_result:
                     for mov_mult in grid_mov:
-                        params = HybridEloParams(
-                            k=k,
-                            hfa=hfa,
-                            xg_scale=xg_scale,
-                            w_result=w_result,
-                            mov_mult=mov_mult,
-                        )
-                        pred_df, _ = run_hybrid_elo(games, params)
-                        p = np.clip(pred_df["pred_home_win_prob"].to_numpy(), 1e-6, 1 - 1e-6)
-                        score = log_loss(y[mask], p[mask])
-                        if best is None or score < best[0]:
-                            best = (score, params)
+                        for k_decay in grid_k_decay:
+                            params = HybridEloParams(
+                                k=k,
+                                hfa=hfa,
+                                xg_scale=xg_scale,
+                                w_result=w_result,
+                                mov_mult=mov_mult,
+                                k_decay=k_decay
+                            )
+                            pred_df, _ = run_hybrid_elo(games, params)
+                            p = np.clip(pred_df["pred_home_win_prob"].to_numpy(), 1e-6, 1 - 1e-6)
+                            score = log_loss(y[mask], p[mask])
+                            if best is None or score < best[0]:
+                                best = (score, params)
 
     assert best is not None
     return best[1]
@@ -261,11 +296,12 @@ def tune_hybrid_elo_order_robust(
     seed: int = 42,
 ) -> HybridEloParams:
     # Smaller grid than sequential tuning; objective is mean prequential log-loss across random orders.
-    grid_k = [6, 8, 10, 12]
-    grid_hfa = [35, 40, 45, 50]
-    grid_xg_scale = [0.4, 0.5, 0.7, 1.0]
-    grid_w_result = [0.5, 0.6, 0.7]
-    grid_mov = [True, False]
+    grid_k = [6, 8, 10]
+    grid_hfa = [35, 40, 45]
+    grid_xg_scale = [0.4, 0.5, 0.6]
+    grid_w_result = [0.55, 0.6, 0.65]
+    grid_mov = [True]
+    grid_k_decay = [True, False]
 
     best: tuple[float, HybridEloParams] | None = None
     n_shuffles = max(5, int(n_shuffles))
@@ -275,19 +311,20 @@ def tune_hybrid_elo_order_robust(
             for xg_scale in grid_xg_scale:
                 for w_result in grid_w_result:
                     for mov_mult in grid_mov:
-                        params = HybridEloParams(k=k, hfa=hfa, xg_scale=xg_scale, w_result=w_result, mov_mult=mov_mult)
-                        scores = []
-                        for i in range(n_shuffles):
-                            shuffled = games.sample(frac=1.0, random_state=seed + i).reset_index(drop=True)
-                            pred_df, _ = run_hybrid_elo(shuffled, params)
-                            y = pred_df["home_win"].to_numpy()
-                            p = np.clip(pred_df["pred_home_win_prob"].to_numpy(), 1e-6, 1 - 1e-6)
-                            # Burn-in removes the highly prior-driven earliest predictions in each random order.
-                            start = min(max(0, warmup_games), len(pred_df) - 1)
-                            scores.append(log_loss(y[start:], p[start:]))
-                        score = float(np.mean(scores))
-                        if best is None or score < best[0]:
-                            best = (score, params)
+                        for k_decay in grid_k_decay:
+                            params = HybridEloParams(k=k, hfa=hfa, xg_scale=xg_scale, w_result=w_result, mov_mult=mov_mult, k_decay=k_decay)
+                            scores = []
+                            for i in range(n_shuffles):
+                                shuffled = games.sample(frac=1.0, random_state=seed + i).reset_index(drop=True)
+                                pred_df, _ = run_hybrid_elo(shuffled, params)
+                                y = pred_df["home_win"].to_numpy()
+                                p = np.clip(pred_df["pred_home_win_prob"].to_numpy(), 1e-6, 1 - 1e-6)
+                                # Burn-in removes the highly prior-driven earliest predictions in each random order.
+                                start = min(max(0, warmup_games), len(pred_df) - 1)
+                                scores.append(log_loss(y[start:], p[start:]))
+                            score = float(np.mean(scores))
+                            if best is None or score < best[0]:
+                                best = (score, params)
 
     assert best is not None
     return best[1]
@@ -632,7 +669,7 @@ def main() -> None:
         if args.tune_elo:
             params = tune_hybrid_elo_order_robust(games, n_shuffles=args.tune_shuffles, seed=args.seed)
         else:
-            params = HybridEloParams(k=8, hfa=40, xg_scale=0.4, w_result=0.6, mov_mult=True)
+            params = HybridEloParams(k=8, hfa=40, xg_scale=0.4, w_result=0.6, mov_mult=True, k_decay=True)
         pred_df, rating_samples_df, final_ratings, rating_std, order_sensitivity_df = run_hybrid_elo_shuffle_ensemble(
             games=games,
             params=params,
@@ -644,7 +681,7 @@ def main() -> None:
         if args.tune_elo:
             params = tune_hybrid_elo(games)
         else:
-            params = HybridEloParams(k=8, hfa=40, xg_scale=0.5, w_result=0.6, mov_mult=True)
+            params = HybridEloParams(k=8, hfa=40, xg_scale=0.5, w_result=0.6, mov_mult=True, k_decay=True)
         pred_df, final_ratings = run_hybrid_elo(games, params)
         rating_samples_df = None
         order_sensitivity_df = None
@@ -707,6 +744,8 @@ def main() -> None:
             "xg_scale": params.xg_scale,
             "w_result": params.w_result,
             "mov_mult": params.mov_mult,
+            "mov_scale": params.mov_scale,
+            "k_decay": params.k_decay,
             "scale": params.scale,
         },
         "order_robust_settings": {

@@ -6,11 +6,13 @@
   "teams": 32,
   "random_seed": 42,
   "hybrid_elo_params": {
-    "k": 8,
-    "hfa": 40,
-    "xg_scale": 0.5,
-    "w_result": 0.6,
+    "k": 6,
+    "hfa": 45,
+    "xg_scale": 0.4,
+    "w_result": 0.65,
     "mov_mult": true,
+    "mov_scale": 2.2,
+    "k_decay": true,
     "scale": 400.0
   },
   "order_robust_settings": {
@@ -19,14 +21,14 @@
     "tune_shuffles": null
   },
   "cv_metrics": {
-    "logloss": 0.6776836032509399,
-    "brier": 0.24238168626649018,
-    "auc": 0.5752402931100115
+    "logloss": 0.6766672348139215,
+    "brier": 0.24190109997883674,
+    "auc": 0.5762633231823373
   },
   "full_metrics": {
-    "logloss": 0.6781202566334648,
-    "brier": 0.2425791149544967,
-    "auc": 0.5711065961065961
+    "logloss": 0.6770708773220424,
+    "brier": 0.24207368815073693,
+    "auc": 0.5720303345303346
   },
   "baseline_cv_metrics": {
     "logloss": 0.6856215261779229,
@@ -39,10 +41,10 @@
     "auc": 0.5
   },
   "improvement_vs_baseline": {
-    "cv_logloss_delta": 0.007937922926983032,
-    "cv_brier_delta": 0.003864935302351713,
-    "full_logloss_delta": 0.006806126852334837,
-    "full_brier_delta": 0.003321762499399805
+    "cv_logloss_delta": 0.008954291364001388,
+    "cv_brier_delta": 0.004345521590005147,
+    "full_logloss_delta": 0.007855506163757187,
+    "full_brier_delta": 0.0038271893031595616
   },
   "outputs": {
     "phase1a_power_rankings": "outputs/phase1a_power_rankings.csv",
@@ -52,6 +54,6 @@
     "phase1b_all_disparity": "outputs/phase1b_line_disparity_all_teams.csv",
     "phase1b_top10_disparity": "outputs/phase1b_top10_line_disparity.csv",
     "phase1c_png": "outputs/phase1c_disparity_vs_team_strength.png",
-    "phase1a_round1_probabilities": "outputs/phase1a_round1_matchup_probabilities.csv"
+    "phase1a_round1_probabilities": null
   }
 }
