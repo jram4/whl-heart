@@ -1,32 +1,32 @@
 {
-  "modeling_mode": "order_robust_shuffle_ensemble",
+  "modeling_mode": "sequential_single_order",
   "data_csv": "whl_2025 - whl_2025(1).csv",
   "rows": 25827,
   "games": 1312,
   "teams": 32,
   "random_seed": 42,
   "hybrid_elo_params": {
-    "k": 10,
-    "hfa": 45,
-    "xg_scale": 0.4,
-    "w_result": 0.5,
+    "k": 8,
+    "hfa": 40,
+    "xg_scale": 0.5,
+    "w_result": 0.6,
     "mov_mult": true,
     "scale": 400.0
   },
   "order_robust_settings": {
-    "enabled": true,
-    "n_shuffles": 400,
-    "tune_shuffles": 60
+    "enabled": false,
+    "n_shuffles": null,
+    "tune_shuffles": null
   },
   "cv_metrics": {
-    "logloss": 0.6747614426390003,
-    "brier": 0.2409594430115785,
-    "auc": 0.5852406103286386
+    "logloss": 0.6776836032509399,
+    "brier": 0.24238168626649018,
+    "auc": 0.5752402931100115
   },
   "full_metrics": {
-    "logloss": 0.6720218635375924,
-    "brier": 0.23960567742394034,
-    "auc": 0.5956081081081082
+    "logloss": 0.6781202566334648,
+    "brier": 0.2425791149544967,
+    "auc": 0.5711065961065961
   },
   "baseline_cv_metrics": {
     "logloss": 0.6856215261779229,
@@ -39,16 +39,16 @@
     "auc": 0.5
   },
   "improvement_vs_baseline": {
-    "cv_logloss_delta": 0.010860083538922649,
-    "cv_brier_delta": 0.005287178557263378,
-    "full_logloss_delta": 0.012904519948207183,
-    "full_brier_delta": 0.0062952000299561495
+    "cv_logloss_delta": 0.007937922926983032,
+    "cv_brier_delta": 0.003864935302351713,
+    "full_logloss_delta": 0.006806126852334837,
+    "full_brier_delta": 0.003321762499399805
   },
   "outputs": {
     "phase1a_power_rankings": "outputs/phase1a_power_rankings.csv",
     "phase1a_sequential_game_predictions": "outputs/phase1a_sequential_game_predictions.csv",
-    "phase1a_rating_samples_by_shuffle": "outputs/phase1a_rating_samples_by_shuffle.csv",
-    "phase1a_order_sensitivity_summary": "outputs/phase1a_order_sensitivity_summary.csv",
+    "phase1a_rating_samples_by_shuffle": null,
+    "phase1a_order_sensitivity_summary": null,
     "phase1b_all_disparity": "outputs/phase1b_line_disparity_all_teams.csv",
     "phase1b_top10_disparity": "outputs/phase1b_top10_line_disparity.csv",
     "phase1c_png": "outputs/phase1c_disparity_vs_team_strength.png",
