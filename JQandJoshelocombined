@@ -1,0 +1,30 @@
+import pandas as pd
+
+# 1. Load the dataset
+df = pd.read_csv('xg_elo_model_data.csv')
+
+# 2. Isolate the two different Elo perspectives
+# Column 'Elo' represents the result-based score
+# Column 'Elo.1' represents the performance-based model
+elo_results = df[['Team', 'Elo']].rename(columns={'Elo': 'Elo_Results'})
+elo_model = df[['Team.1', 'Elo.1']].rename(columns={'Team.1': 'Team', 'Elo.1': 'Elo_Model'})
+
+# 3. Merge the datasets on Team Name
+# This ensures we are comparing the same team's scores side-by-side
+merged_df = pd.merge(elo_results, elo_model, on='Team')
+
+# 4. Calculate the Combined Elo (The 50/50 Methodology)
+# This balances 'Actual Results' with 'Underlying Performance'
+merged_df['Combined_Elo'] = (merged_df['Elo_Results'] + merged_df['Elo_Model']) / 2
+
+# 5. Sort and Rank
+# We sort by the new Combined_Elo to find the most 'complete' teams
+merged_df = merged_df.sort_values(by='Combined_Elo', ascending=False).reset_index(drop=True)
+merged_df['Rank'] = merged_df.index + 1
+
+# 6. Display the Top 10 for the report
+top_10 = merged_df.head(10)
+print(top_10[['Rank', 'Team', 'Combined_Elo']])
+
+# 7. Export the final ranking for presentation
+merged_df.to_csv('final_team_rankings.csv', index=False)
